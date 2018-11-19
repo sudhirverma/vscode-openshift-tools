@@ -37,6 +37,7 @@
     "onCommand:openshift.app.delete.palette",
     "onCommand:openshift.app.describe",
     "onCommand:openshift.app.create",
+    "onCommand:openshift.app.create.palette",
     "onCommand:openshift.app.delete",
     "onCommand:openshift.component.create",
     "onCommand:openshift.component.describe",
@@ -106,6 +107,11 @@
       },
       {
         "command": "openshift.app.create",
+        "title": "New Application",
+        "category": "OpenShift"
+      },
+      {
+        "command": "openshift.app.create.palette",
         "title": "New Application",
         "category": "OpenShift"
       },
