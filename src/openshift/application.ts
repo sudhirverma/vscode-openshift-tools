@@ -10,20 +10,36 @@ import * as validator from 'validator';
 
 export class Application extends OpenShiftItem {
     static async create(project: OpenShiftObject): Promise<String> {
-        const appName = await vscode.window.showInputBox({
-            prompt: "Application name",
-            validateInput: (value: string) => {
-                if (validator.isEmpty(value.trim())) {
-                    return 'Empty application name';
-                }
-                if (!validator.matches(value.trim(), '^[a-z0-9]([-a-z0-9]*[a-z0-9])*$')) {
-                    return 'Not a valid application name. Please use lower case alphanumeric characters or "-", and must start and end with an alphanumeric character';
-                }
+        let projectName;
+        let appName;
+        if (project) {
+            projectName = project;
+        } else {
+            projectName = await Application.odo.getProjects();
+            if (projectName.length === 0) {
+                await vscode.window.showErrorMessage('Sorry there are no project to create an application (Please create new project and try again)');
+            }else if (projectName.length > 1 ) {
+                projectName = await vscode.window.showQuickPick(projectName, {placeHolder: "In which project you want to create Application"});
+            } else if (projectName[0]) {
+                projectName = projectName[0];
             }
-        });
+        }
+        if (projectName.length > 0) {
+            appName = await vscode.window.showInputBox({
+                prompt: "Application name",
+                validateInput: (value: string) => {
+                    if (validator.isEmpty(value.trim())) {
+                        return 'Empty application name';
+                    }
+                    if (!validator.matches(value.trim(), '^[a-z0-9]([-a-z0-9]*[a-z0-9])*$')) {
+                        return 'Not a valid application name. Please use lower case alphanumeric characters or "-", and must start and end with an alphanumeric character';
+                    }
+                }
+            });
+        }
         if (appName) {
             return Promise.resolve()
-                .then(() => Application.odo.execute(`odo app create ${appName.trim()} --project ${project.getName()}`))
+                .then(() => Application.odo.execute(`odo app create ${appName.trim()} --project ${projectName.getName()}`))
                 .then(() => Application.explorer.refresh(project))
                 .then(() => `Application '${appName}' successfully created`)
                 .catch((error) => Promise.reject(`Failed to create application with error '${error}'`));
