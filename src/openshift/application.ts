@@ -10,21 +10,21 @@ import * as validator from 'validator';
 
 export class Application extends OpenShiftItem {
     static async create(project: OpenShiftObject): Promise<String> {
-        let projectName;
+        let projectObj;
         let appName;
         if (project) {
-            projectName = project;
+            projectObj = project;
         } else {
-            projectName = await Application.odo.getProjects();
-            if (projectName.length === 0) {
+            projectObj = await Application.odo.getProjects();
+            if (projectObj.length === 0) {
                 await vscode.window.showErrorMessage('Sorry there are no project to create an application (Please create new project and try again)');
-            }else if (projectName.length > 1 ) {
-                projectName = await vscode.window.showQuickPick(projectName, {placeHolder: "In which project you want to create Application"});
-            } else if (projectName[0]) {
-                projectName = projectName[0];
+            }else if (projectObj.length > 1 ) {
+                projectObj = await vscode.window.showQuickPick(projectObj, {placeHolder: "In which project you want to create Application"});
+            } else if (projectObj[0]) {
+                projectObj = projectObj[0];
             }
         }
-        if (projectName.length > 0) {
+        if (!(projectObj.length === 0)) {
             appName = await vscode.window.showInputBox({
                 prompt: "Application name",
                 validateInput: (value: string) => {
@@ -39,7 +39,7 @@ export class Application extends OpenShiftItem {
         }
         if (appName) {
             return Promise.resolve()
-                .then(() => Application.odo.execute(`odo app create ${appName.trim()} --project ${projectName.getName()}`))
+                .then(() => Application.odo.execute(`odo app create ${appName.trim()} --project ${projectObj.getName()}`))
                 .then(() => Application.explorer.refresh(project))
                 .then(() => `Application '${appName}' successfully created`)
                 .catch((error) => Promise.reject(`Failed to create application with error '${error}'`));
