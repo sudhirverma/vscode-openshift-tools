@@ -9,42 +9,54 @@ import * as vscode from 'vscode';
 import * as validator from 'validator';
 
 export class Application extends OpenShiftItem {
+
     static async create(project: OpenShiftObject): Promise<String> {
-        let projectObj;
+        let projectList: Array<OpenShiftObject>;
         let appName;
-        if (project) {
-            projectObj = project;
-        } else {
-            projectObj = await Application.odo.getProjects();
-            if (projectObj.length === 0) {
+        if (!project) {
+            projectList = await Application.odo.getProjects();
+            if (projectList.length === 0) {
                 await vscode.window.showErrorMessage('Sorry there are no project to create an application (Please create new project and try again)');
-            }else if (projectObj.length > 1 ) {
-                projectObj = await vscode.window.showQuickPick(projectObj, {placeHolder: "In which project you want to create Application"});
-            } else if (projectObj[0]) {
-                projectObj = projectObj[0];
+            }else if (projectList.length > 1 ) {
+                project = await vscode.window.showQuickPick(projectList, {placeHolder: "In which project you want to create Application"});
+                if (project) {
+                    appName = await Application.getApplicationName();
+                }
+            } else if (projectList.length > 0) {
+                project = projectList[0];
+                if (project) {
+                    appName = await Application.getApplicationName();
+                }
+            }
+        } else {
+            if (project) {
+                appName = await Application.getApplicationName();
             }
         }
-        if (!(projectObj.length === 0)) {
-            appName = await vscode.window.showInputBox({
-                prompt: "Application name",
-                validateInput: (value: string) => {
-                    if (validator.isEmpty(value.trim())) {
-                        return 'Empty application name';
-                    }
-                    if (!validator.matches(value.trim(), '^[a-z0-9]([-a-z0-9]*[a-z0-9])*$')) {
-                        return 'Not a valid application name. Please use lower case alphanumeric characters or "-", and must start and end with an alphanumeric character';
-                    }
-                }
-            });
-        }
+
         if (appName) {
+
             return Promise.resolve()
-                .then(() => Application.odo.execute(`odo app create ${appName.trim()} --project ${projectObj.getName()}`))
+                .then(() => Application.odo.execute(`odo app create ${appName.trim()} --project ${project.getName()}`))
                 .then(() => Application.explorer.refresh(project))
                 .then(() => `Application '${appName}' successfully created`)
                 .catch((error) => Promise.reject(`Failed to create application with error '${error}'`));
         }
         return null;
+    }
+
+    static async getApplicationName() {
+        return await vscode.window.showInputBox({
+            prompt: "Application name",
+            validateInput: (value: string) => {
+                if (validator.isEmpty(value.trim())) {
+                    return 'Empty application name';
+                }
+                if (!validator.matches(value.trim(), '^[a-z0-9]([-a-z0-9]*[a-z0-9])*$')) {
+                    return 'Not a valid application name. Please use lower case alphanumeric characters or "-", and must start and end with an alphanumeric character';
+                }
+            }
+        });
     }
 
     static describe(treeItem: OpenShiftObject): void {

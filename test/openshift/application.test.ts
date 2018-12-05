@@ -77,6 +77,77 @@ suite('Openshift/Application', () => {
         });
     });
 
+    suite('create application with no context', () => {
+        let inputStub: sinon.SinonStub;
+        let quickPickStub: sinon.SinonStub;
+
+        setup(() => {
+            inputStub = sandbox.stub(vscode.window, 'showInputBox');
+            quickPickStub = sandbox.stub(vscode.window, 'showQuickPick');
+            quickPickStub.onFirstCall().resolves(projectItem);
+        });
+
+        test('calls the appropriate error message', async () => {
+            sandbox.stub(OdoImpl.prototype, 'getProjects').resolves([]);
+            const errorStub = sandbox.stub(vscode.window, 'showErrorMessage');
+
+            await Application.create(null);
+            expect(errorStub).calledOnceWith('Sorry there are no project to create an application (Please create new project and try again)');
+        });
+
+        test('calls the appropriate odo command', async () => {
+            sandbox.stub(OdoImpl.prototype, 'getProjects').resolves([projectItem]);
+            inputStub.resolves('name');
+            execStub.resolves();
+
+            await Application.create(null);
+
+            expect(execStub).calledOnceWith(`odo app create name --project ${projectItem.getName()}`);
+        });
+
+        test('calls the appropriate odo command when there are more then one project', async () => {
+            sandbox.stub(OdoImpl.prototype, 'getProjects').resolves([projectItem, projectItem]);
+            inputStub.resolves('name');
+            execStub.resolves();
+
+            await Application.create(null);
+
+            expect(execStub).calledOnceWith(`odo app create name --project ${projectItem.getName()}`);
+        });
+
+        test('returns status when successful', async () => {
+            sandbox.stub(OdoImpl.prototype, 'getProjects').resolves([projectItem]);
+            inputStub.resolves('name1');
+            execStub.resolves();
+
+            const result = await Application.create(null);
+
+            expect(result).equals(`Application 'name1' successfully created`);
+        });
+
+        test('returns null with no input', async() => {
+            sandbox.stub(OdoImpl.prototype, 'getProjects').resolves([projectItem]);
+            inputStub.resolves();
+
+            const result = await Application.create(null);
+
+            expect(result).null;
+        });
+
+        test('wraps error messages with additional info', async () => {
+            sandbox.stub(OdoImpl.prototype, 'getProjects').resolves([projectItem]);
+            inputStub.resolves('name1');
+            execStub.rejects('ERROR');
+
+            try {
+                await Application.create(null);
+                expect.fail();
+            } catch (err) {
+                expect(err).equals(`Failed to create application with error 'ERROR'`);
+            }
+        });
+    });
+
     suite('describe', () => {
         let termStub: sinon.SinonStub;
 
