@@ -88,11 +88,16 @@ suite('Openshift/Application', () => {
         });
 
         test('calls the appropriate error message', async () => {
+            quickPickStub.restore();
             sandbox.stub(OdoImpl.prototype, 'getProjects').resolves([]);
             const errorStub = sandbox.stub(vscode.window, 'showErrorMessage');
-
-            await Application.create(null);
-            expect(errorStub).calledOnceWith('Sorry there are no project to create an application (Please create new project and try again)');
+            try {
+                await Application.create(null)
+            } catch (err) {
+                expect(err.message).equals('You need at least one Project available to create an Application. Please create new OpenShift Project and try again.');    
+                return;
+            };
+            expect.fail();
         });
 
         test('calls the appropriate odo command', async () => {
@@ -203,7 +208,7 @@ suite('Openshift/Application', () => {
                 await Application.del(appItem);
                 expect.fail();
             } catch (err) {
-                expect(err).equals(`Failed to delete application with error 'ERROR'`);
+                expect(err).equals(`Failed to delete Application with error 'ERROR'`);
             }
         });
     });

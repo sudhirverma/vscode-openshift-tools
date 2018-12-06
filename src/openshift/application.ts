@@ -8,41 +8,51 @@ import { OpenShiftObject } from '../odo';
 import * as vscode from 'vscode';
 import * as validator from 'validator';
 
+interface ApplicationData {
+    name: string,
+    projectName: string
+}
+
 export class Application extends OpenShiftItem {
 
+    
     static async create(project: OpenShiftObject): Promise<String> {
-        let projectList: Array<OpenShiftObject>;
-        let appName;
-        if (!project) {
-            projectList = await Application.odo.getProjects();
-            if (projectList.length === 0) {
-                await vscode.window.showErrorMessage('Sorry there are no project to create an application (Please create new project and try again)');
-            }else if (projectList.length > 1 ) {
-                project = await vscode.window.showQuickPick(projectList, {placeHolder: "In which project you want to create Application"});
-                if (project) {
-                    appName = await Application.getApplicationName();
-                }
-            } else if (projectList.length > 0) {
-                project = projectList[0];
-                if (project) {
-                    appName = await Application.getApplicationName();
-                }
-            }
-        } else {
-            if (project) {
-                appName = await Application.getApplicationName();
-            }
-        }
 
-        if (appName) {
+        let data = await Application.getApplicationData(project);
 
+        if (data) {
             return Promise.resolve()
-                .then(() => Application.odo.execute(`odo app create ${appName.trim()} --project ${project.getName()}`))
-                .then(() => Application.explorer.refresh(project))
-                .then(() => `Application '${appName}' successfully created`)
+                .then(() => Application.odo.execute(`odo app create ${data.name} --project ${data.projectName}`))
+                .then(() => Application.explorer.refresh(project ? project : undefined))
+                .then(() => `Application '${data.name}' successfully created`)
                 .catch((error) => Promise.reject(`Failed to create application with error '${error}'`));
         }
         return null;
+    }
+
+    static async getApplicationData(project: OpenShiftObject): Promise <ApplicationData>{
+        let projectName: string  = project ? project.getName() : undefined;
+        let name: string;
+        if (!projectName) {
+            projectName = await Application.getProjectName();
+        }
+        if (projectName) {
+            name = await Application.getApplicationName();
+        }
+        return name && projectName ? {name, projectName} : undefined;
+    }
+
+    static async getProjectName(): Promise<string> {
+        let project: OpenShiftObject = await vscode.window.showQuickPick(Application.getProjectNames(), {placeHolder: "In which Project you want to create an Application"});
+        return project ? project.getName(): undefined;
+    }
+
+    static async getProjectNames(): Promise<OpenShiftObject[]> {
+        let projectList: Array<OpenShiftObject> = await Application.odo.getProjects();
+        if (projectList.length === 0) {
+           throw Error('You need at least one Project available to create an Application. Please create new OpenShift Project and try again.');
+        }
+        return projectList;
     }
 
     static async getApplicationName() {
@@ -53,7 +63,7 @@ export class Application extends OpenShiftItem {
                     return 'Empty application name';
                 }
                 if (!validator.matches(value.trim(), '^[a-z0-9]([-a-z0-9]*[a-z0-9])*$')) {
-                    return 'Not a valid application name. Please use lower case alphanumeric characters or "-", and must start and end with an alphanumeric character';
+                    return 'Not a valid Application name. Please use lower case alphanumeric characters or "-", and must start and end with an alphanumeric character';
                 }
             }
         });
@@ -72,7 +82,7 @@ export class Application extends OpenShiftItem {
             project = treeItem.getParent();
             application = treeItem;
         } else {
-            project = await vscode.window.showQuickPick(Application.odo.getProjects(), {placeHolder: "From which project you want to delete Application"});
+            project = await vscode.window.showQuickPick(Application.odo.getProjects(), {placeHolder: "From which Project you want to delete Application"});
             if (project) {
                 application = await vscode.window.showQuickPick(Application.odo.getApplications(project), {placeHolder: "Select Application to delete"});
             }
@@ -86,7 +96,7 @@ export class Application extends OpenShiftItem {
                     .then(() => Application.odo.execute(`odo app delete ${appName} --project ${projName} -f`))
                     .then(() => Application.explorer.refresh(treeItem ? treeItem.getParent() : undefined))
                     .then(() => `Application '${appName}' successfully deleted`)
-                    .catch((err) => Promise.reject(`Failed to delete application with error '${err}'`));
+                    .catch((err) => Promise.reject(`Failed to delete Application with error '${err}'`));
             }
         }
         return null;
