@@ -15,7 +15,6 @@ interface ApplicationData {
 
 export class Application extends OpenShiftItem {
 
-    
     static async create(project: OpenShiftObject): Promise<String> {
 
         let data = await Application.getApplicationData(project);
@@ -64,6 +63,20 @@ export class Application extends OpenShiftItem {
                 }
                 if (!validator.matches(value.trim(), '^[a-z0-9]([-a-z0-9]*[a-z0-9])*$')) {
                     return 'Not a valid Application name. Please use lower case alphanumeric characters or "-", and must start and end with an alphanumeric character';
+                }
+            }
+        });
+    }
+
+    static async getApplicationName() {
+        return await vscode.window.showInputBox({
+            prompt: "Application name",
+            validateInput: (value: string) => {
+                if (validator.isEmpty(value.trim())) {
+                    return 'Empty application name';
+                }
+                if (!validator.matches(value.trim(), '^[a-z0-9]([-a-z0-9]*[a-z0-9])*$')) {
+                    return 'Not a valid application name. Please use lower case alphanumeric characters or "-", and must start and end with an alphanumeric character';
                 }
             }
         });
