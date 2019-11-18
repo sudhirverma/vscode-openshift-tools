@@ -154,7 +154,7 @@ suite('K8s/console', () => {
                 })
             });
             await Console.openProject(context);
-            expect(commandStub).calledOnceWith('vscode.open', vscode.Uri.parse(`https://console-openshift-console.apps-crc.testing/k8s/cluster/projects/${project}`));
+            expect(commandStub).calledOnceWith('vscode.open', vscode.Uri.parse(`https://console-openshift-console.apps-crc.testing/k8s/cluster/projects/${context.name}`));
         });
 
         test('Open the Project Url for 3.x cluster', async () => {
@@ -165,7 +165,7 @@ suite('K8s/console', () => {
                 stdout: "https://162.165.64.43:8443"
             });
             await Console.openProject(context);
-            expect(commandStub).calledOnceWith('vscode.open', vscode.Uri.parse(`https://162.165.64.43:8443/console/project/${project}/overview`));
+            expect(commandStub).calledOnceWith('vscode.open', vscode.Uri.parse(`https://162.165.64.43:8443/console/project/${context.name}/overview`));
         });
     });
 });
